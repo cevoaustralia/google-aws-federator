@@ -13,7 +13,7 @@ def schema(args):
     schema = googlefed.Schema(customerId=args['customerid'])
     print(schema.list())
 
-if __name__ == "__main__":
+def main:
     parser = argparse.ArgumentParser(prog="Federator", description="Manage Google Apps configurations for AWS Single Sign On")
     subparsers = parser.add_subparsers(help="subcommand help")
 
@@ -29,3 +29,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     args.func(args)
+
+if __name__ == "__main__":
+    main()
