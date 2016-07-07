@@ -8,6 +8,10 @@ identity provider) and AWS.
 ### Prerequisites
 
 1. Google Apps set up already. You're going to need to generate secrets for the federator.
+1. You need to know your unique Google 'customer ID'. You can get this from the Google Admin
+   Console, via `Security -> Set up Single Sign On (SSO)` -- the customer ID is the bit on the
+   tail end of the Entity ID URL that looks like this:
+   `https://accounts.google.com/o/saml2?idpid=XXXXXXXXX` (the "XXXXXXXXX" part)
 
 ### Configuration
 
@@ -37,22 +41,25 @@ identity provider) and AWS.
 ### First Run
 
 In order to grant access to the Federator to modify your Google Apps Domain Users, you'll need
-to run it as a user who has the appropriate access. The Federator will need to have access to
-modify custom user schemas (to create the schema for the federated roles) and to modify users
-(to assign those roles from within the new custom schema to users).
+to authenticate, via the OAuth2 browser flow, as a user who has the appropriate access.
+The Federator will need to have access to modify custom user schemas (to create the schema
+for the federated roles) and to modify users (to assign those roles from within the new
+custom schema to users).
 
 ```
-locahost$ federator init <client_id> <client_secret> <customer_id>
+locahost$ federator init -I <client_id> -C <client_secret>
 ```
 
 The script will cause a browser to be opened, where you can sign in as an appropriate user and
 approve the access. Once this has been done once, the credentials will be stored in a file
-`credentials.dat`. Keep it secret! Keep it safe!
+`credentials.dat` -- however, these credentials expire after one hour after they become idle,
+so if you're going to be doing this sort of thing a lot you'd probably be better off
+batching things up.
 
 ### Subsequent Runs
 
 Once the `credentials.dat` file has been created, you will not have to go through the browser
-auth steps again. This makes it critical that you store the credentials file securely!
+auth steps again while the credentials are valid.
 
 ## Usage
 
@@ -66,7 +73,7 @@ SP).
 TL;DR: Federator can make your Google Apps Domain the right shape to use AWS via Google Auth.
 
 ```
-localhost$ federator create_schema
+localhost$ federator schema -C <customerid> create
 ```
 
 If the custom schema has already been created, nothing will be done. If the custom schema has
@@ -79,7 +86,7 @@ the custom schema, you will have to delete the existing one, and create a new on
 Federator can "clean up" by removing the custom AWS SSO schema. Simply:
 
 ```
-localhost$ federator delete_schema
+localhost$ federator schema -C <customerid> delete
 ```
 
 If the custom schema has already been deleted, nothing will happen.
@@ -89,7 +96,7 @@ If the custom schema has already been deleted, nothing will happen.
 Federator can verify that the custom schema has been created:
 
 ```
-localhost$ federator verify_schema
+localhost$ federator schema -C <customerid> verify
 Schema exists
 ```
 
