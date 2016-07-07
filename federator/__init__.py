@@ -11,27 +11,43 @@ def init(args):
 def schema_verify(args):
     args = vars(args)
     schema = googlefed.Schema(customerId=args['customerid'])
-    if schema.has_sso_schema():
-        print("Schema exists")
+    if schema.exists():
+        print("Custom SSO schema exists")
     else:
-        print("Schema does not exist")
+        print("Custom SSO schema does not exist")
         sys.exit(1)
 
 def schema_create(args):
     args = vars(args)
     schema = googlefed.Schema(customerId=args['customerid'])
-    if schema.has_sso_schema():
+    if schema.exists():
         return True
 
-    print("Creating custom schema")
+    if schema.create():
+        print("Created custom SSO schema")
+    else:
+        print("Could not create custom SSO schema")
+        sys.exit(1)
 
 def schema_delete(args):
     args = vars(args)
     schema = googlefed.Schema(customerId=args['customerid'])
-    if not schema.has_sso_schema():
+    if not schema.exists():
         return True
 
-    print("Deleting custom schema")
+    if schema.delete():
+        print("Deleted custom SSO schema")
+    else:
+        print("Could not delete custom SSO schema -- is it in use?")
+        sys.exit(1)
+
+def schema_show(args):
+    args = vars(args)
+    schema = googlefed.Schema(customerId=args['customerid'])
+    if not schema.exists():
+        return False
+
+    print("%s" % schema.get())
 
 def main():
     parser = argparse.ArgumentParser(prog="Federator", description="Manage Google Apps configurations for AWS Single Sign On")
@@ -55,6 +71,9 @@ def main():
 
     parser_schema_verify = schema_subparser.add_parser("verify", help="Delete the custom schema")
     parser_schema_verify.set_defaults(func=schema_verify)
+
+    parser_schema_show = schema_subparser.add_parser("show", help="Print the custom schema")
+    parser_schema_show.set_defaults(func=schema_show)
 
     args = parser.parse_args()
     # have to clean out our command-line args or they get swallowed twice during init

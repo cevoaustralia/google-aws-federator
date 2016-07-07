@@ -7,7 +7,7 @@ from oauth2client.file import Storage
 from oauth2client.client import AccessTokenRefreshError
 from oauth2client.client import OAuth2WebServerFlow
 import json
-
+from googleapiclient.errors import HttpError
 
 class GoogleApi(object):
     # we need multiple scopes, because we need to define a custom schema
@@ -36,6 +36,22 @@ class User(GoogleApi):
         super(User, self).__init__(customerId=customerId, clientId=clientId, clientSecret=clientSecret)
 
 class Schema(GoogleApi):
+    rawSchema = """
+    {
+        "fields":
+          [
+            {
+                "fieldName": "role",
+                "fieldType": "STRING",
+                "readAccessType": "ADMINS_AND_SELF",    
+                "multiValued": true
+            }
+        ],
+        "schemaName": "SSO"
+    }
+    """
+    customSchema = json.loads(rawSchema)
+
     def __init__(self, customerId=None):
         super(Schema, self).__init__()
         self.customerId = customerId
@@ -45,7 +61,13 @@ class Schema(GoogleApi):
         response = request.execute()
         return response
 
-    def has_sso_schema(self):
+    def get(self):
+        key = self.customSchema['schemaName']
+        request = self.service.schemas().get(customerId=self.customerId, schemaKey=key)
+        response = request.execute()
+        return json.dumps(response, sort_keys=True, indent=4, separators=(',', ': '))
+
+    def exists(self):
         request = self.service.schemas().list(customerId=self.customerId)
         response = request.execute()
         for schema in response['schemas']:
@@ -53,4 +75,33 @@ class Schema(GoogleApi):
                 return True
 
         return False
+
+    def create(self):
+        request = self.service.schemas().insert(customerId=self.customerId, body=self.customSchema)
+
+        try:
+            response = request.execute()
+        except HttpError as err:
+            print(err.resp)
+            if err.resp['status'] == '412':
+                print("Schema already exists")
+            else:
+                raise
+
+        return True
+
+    def delete(self):
+        key = self.customSchema['schemaName']
+        request = self.service.schemas().delete(customerId=self.customerId, schemaKey=key)
+
+        try:
+            response = request.execute()
+        except HttpError as err:
+            if err.resp['status'] == '400':
+                return False
+            else:
+                raise
+
+        return True
+
 
