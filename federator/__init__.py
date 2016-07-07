@@ -13,7 +13,7 @@ def schema(args):
     schema = googlefed.Schema(customerId=args['customerid'])
     print(schema.list())
 
-def main:
+def main():
     parser = argparse.ArgumentParser(prog="Federator", description="Manage Google Apps configurations for AWS Single Sign On")
     subparsers = parser.add_subparsers(help="subcommand help")
 
