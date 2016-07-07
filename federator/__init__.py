@@ -28,6 +28,8 @@ def main():
     parser_schema.set_defaults(func=schema)
 
     args = parser.parse_args()
+    # have to clean out our command-line args or they get swallowed twice during init
+    sys.argv = ['']
     args.func(args)
 
 if __name__ == "__main__":
