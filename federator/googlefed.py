@@ -8,6 +8,7 @@ from oauth2client.client import AccessTokenRefreshError
 from oauth2client.client import OAuth2WebServerFlow
 import json
 from googleapiclient.errors import HttpError
+import re
 
 class GoogleApi(object):
     # we need multiple scopes, because we need to define a custom schema
@@ -31,9 +32,78 @@ class GoogleApi(object):
         self.service = build('admin', 'directory_v1', http=self.http)
 
 class User(GoogleApi):
-    def __init__(self, customerId=None, userKey=None, clientId=None, clientSecret=None):
+    roleArnShape = re.compile('^arn:aws:iam::(\d{12}):role/(\w+)')
+    providerArnShape = re.compile('^arn:aws:iam::\d{12}:saml-provider/\w+')
+
+    patchShape = """
+    {
+        "customSchemas": {
+            "SSO": {
+                "role": [
+                    {
+                        "value": "%s,%s",
+                        "customType": "%s"
+                    }
+                ]
+            }
+        }
+    }
+    """
+
+    def __init__(self, userKey=None):
+        super(User, self).__init__()
         self.userKey = userKey
-        super(User, self).__init__(customerId=customerId, clientId=clientId, clientSecret=clientSecret)
+
+    def get(self):
+        request = self.service.users().get(userKey=self.userKey, projection='full')
+        return json.dumps(request.execute(), sort_keys=True, indent=4, separators=(',', ': '))
+
+    def add_role(self, roleArn=None, providerArn=None):
+        # Make sure the ARNs are the right kind of shape
+        roleMatch = self.roleArnShape.match(roleArn)
+        if not roleMatch:
+            print("Role ARN is incorrect; must be 'arn:aws:iam::<ACCOUNTID>:role/<SOMETHING>'")
+            return False
+
+        providerMatch = self.providerArnShape.match(providerArn)
+        if not providerMatch:
+            print("Provider ARN is incorrect; must be 'arn:aws:iam::<ACCOUNTID>:saml-provider/<SOMETHING>'")
+            return False
+
+        # We have to _add_ the patch to the existing set,
+        # because the whole custom schema is replaced. We will only add it if the 
+        # <rolearn>,<providerarn> tuple is different and if the customType name
+        # is different. This means that we can't, for example, have two roles
+        # with the same name in the same account but with different SAML providers, but
+        # I think that's OK because I don't think AWS lets you do that anyhow
+        current = json.loads(self.get())
+        current = current['customSchemas']['SSO']
+
+        typeName = roleMatch.group(1) + '-' + roleMatch.group(2)
+        shape = self.patchShape % (roleArn, providerArn, typeName)
+        patch = json.loads(shape)
+
+        do_add = True
+        for role in current['role']:
+            if role['value'] == roleArn + "," + providerArn:
+                do_add = False
+                continue
+
+            if role['customType'] == typeName:
+                do_add = False
+                continue
+
+            patch['customSchemas']['SSO']['role'].append(role)
+
+        patch_str = json.dumps(patch)
+
+        if not do_add:
+            print("That user already has access to that role")
+            return False
+
+        request = self.service.users().patch(userKey=self.userKey, body=patch)
+        response = request.execute()
+        return roleMatch.group(2)
 
 class Schema(GoogleApi):
     rawSchema = """

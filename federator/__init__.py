@@ -45,16 +45,36 @@ def schema_show(args):
     args = vars(args)
     schema = googlefed.Schema(customerId=args['customerid'])
     if not schema.exists():
-        return False
+        sys.exit(1)
 
     print("%s" % schema.get())
 
+def user_add(args):
+    args = vars(args)
+    user = googlefed.User(userKey=args['userkey'])
+    added = user.add_role(roleArn=args['rolearn'], providerArn=args['providerarn'])
+    if added:
+        print("Added new role %s to user %s" % (added, args['userkey']))
+    else:
+        print("Could not add new role to user %s" % args['userkey'])
+        sys.exit(1)
+
+def user_remove(args):
+    args = vars(args)
+    print("removing a role from a user: %s" % args)
+
+def user_show(args):
+    args = vars(args)
+    user = googlefed.User(userKey=args['userkey'])
+    print(user.get())
+
 def main():
-    parser = argparse.ArgumentParser(prog="Federator", description="Manage Google Apps configurations for AWS Single Sign On")
+    parser = argparse.ArgumentParser(prog="federator", description="Manage Google Apps configurations for AWS Single Sign On")
     main_subparsers = parser.add_subparsers(help="subcommand help")
 
     parser_init = main_subparsers.add_parser("init", help="Initial setup of Federator")
     parser_schema = main_subparsers.add_parser("schema", help="Operations on custom schema")
+    parser_user = main_subparsers.add_parser("user", help="User management")
     
     parser_init.add_argument("-I", "--clientid", required=True)
     parser_init.add_argument("-S", "--clientsecret", required=True)
@@ -74,6 +94,21 @@ def main():
 
     parser_schema_show = schema_subparser.add_parser("show", help="Print the custom schema")
     parser_schema_show.set_defaults(func=schema_show)
+
+    parser_user.add_argument("-U", "--userkey", required=True)
+    user_subparser = parser_user.add_subparsers(help="User subcommand help")
+
+    parser_user_add = user_subparser.add_parser("add", help="Add a role to a user")
+    parser_user_add.add_argument("-R", "--rolearn", required=True, help="The ARN of the AWS Role")
+    parser_user_add.add_argument("-P", "--providerarn", required=True, help="The ARN of the AWS Identity Provider")
+
+    parser_user_add.set_defaults(func=user_add)
+
+    parser_user_remove = user_subparser.add_parser("remove", help="Remove a role from a user")
+    parser_user_remove.set_defaults(func=user_remove)
+
+    parser_user_show = user_subparser.add_parser("show", help="Show the current shape of a user")
+    parser_user_show.set_defaults(func=user_show)
 
     args = parser.parse_args()
     # have to clean out our command-line args or they get swallowed twice during init
