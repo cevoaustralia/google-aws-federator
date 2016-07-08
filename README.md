@@ -79,7 +79,7 @@ localhost$ federator schema -C <customerid> create
 If the custom schema has already been created, nothing will be done. If the custom schema has
 been created, but is the wrong "shape", then nothing will still be done. If you want to update
 the custom schema, you will have to delete the existing one, and create a new one (see below for
-`delete_schema` functionality)
+`delete` functionality)
 
 ### Deleting the AWS SSO Schema
 
@@ -91,6 +91,9 @@ localhost$ federator schema -C <customerid> delete
 
 If the custom schema has already been deleted, nothing will happen.
 
+It also seems like the schema cannot be deleted if it's in use -- in other words, if any users
+have attributes that are described by the custom schema.
+
 ### Validating whether the custom AWS SSO Schema has been created
 
 Federator can verify that the custom schema has been created:
@@ -101,3 +104,28 @@ Schema exists
 ```
 
 Federator will also return exit code 0 if the schema exists, and exit code 1 if it doesn't.
+
+### Examining the created custom AWS SSO Schema
+
+You can dump out the schema quite simply:
+
+```
+localhost$ federator schema -C <customerid> show
+{
+    "etag": "\"XAsypnOPUm9mxokHB31cC07VbXs/hDT2ACjbO2nrT_uVUpNU3VQ_QzU\"",
+    "fields": [
+        {
+            "etag": "\"XRsypGOPUmlmxokHB51cC07Vb3s/mF8fcTzvlteJZ0DIlUljKGlhlfw\"",
+            "fieldId": "CfnqfA4pRxqP8i8ueR1wew==",
+            "fieldName": "role",
+            "fieldType": "STRING",
+            "kind": "admin#directory#schema#fieldspec",
+            "multiValued": true,
+            "readAccessType": "ADMINS_AND_SELF"
+        }
+    ],
+    "kind": "admin#directory#schema",
+    "schemaId": "JfLx5all7--VnMs-H39aNQ==",
+    "schemaName": "SSO"
+}
+```
