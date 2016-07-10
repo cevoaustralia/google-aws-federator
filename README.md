@@ -37,6 +37,16 @@ identity provider) and AWS.
        `Other`, and set the client name to be `Federator CLI`. Click `Create`
     1. There'll be a popup which displays your OAuth2 Client ID and the client secret. Store
        these safely, as they will be used to identify your Federator CLI to Google.
+1. You will need to set up a SAML Identity Provider within your AWS account, and IAM roles which
+   trust that Identity Provider. You can find an excellent tutorial on doing that at
+   [Amazon's Security Blog](https://blogs.aws.amazon.com/security/post/TxT8XK9DVM0MGP/How-to-Set-Up-Federated-Single-Sign-On-to-AWS-Using-Google-Apps). Note that the blog post tells you how to 
+   do everything, including setting up the Google schema; when you get to `Step 4: Add the AWS
+   SAML attributes to your Google Apps user profile`, you can use the Federator to create the
+   custom Schema (see below for usage).
+1. Step 5 in that document will have to be carried out manually for the moment -- I don't have
+   code to create the SAML App in Google yet.
+1. Step 6 in that guide can be done using the Federator -- see below for usage on
+   adding/removing user roles.
 
 ### First Run
 
