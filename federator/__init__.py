@@ -54,7 +54,7 @@ def user_add(args):
     user = googlefed.User(userKey=args['userkey'])
     added = user.add_role(roleArn=args['rolearn'], providerArn=args['providerarn'])
     if added:
-        print("Added new role %s to user %s" % (added, args['userkey']))
+        print("Updated user %s" % args['userkey'])
     else:
         print("Could not add new role to user %s" % args['userkey'])
         sys.exit(1)
@@ -63,7 +63,7 @@ def user_remove(args):
     args = vars(args)
     print("removing a role from a user: %s" % args)
     user = googlefed.User(userKey=args['userkey'])
-    if args.has_key('customtype'):
+    if args.has_key('customtype') and args['customtype'] is not None:
         removed = user.remove_role(customType=args['customtype'])
     elif (args.has_key('rolearn') and args.has_key('providerarn')):
         removed = user.remove_role(roleArn=args['rolearn'], providerArn=args['providerarn'])

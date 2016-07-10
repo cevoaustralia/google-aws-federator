@@ -77,7 +77,6 @@ class User(GoogleApi):
         # with the same name in the same account but with different SAML providers, but
         # I think that's OK because I don't think AWS lets you do that anyhow
         current = json.loads(self.get())
-        print("Current is:\n%s" % json.dumps(current))
         if current.has_key('customSchemas') and current['customSchemas'].has_key('SSO'):
             current = current['customSchemas']['SSO']
         else:
@@ -101,7 +100,7 @@ class User(GoogleApi):
 
         if not do_add:
             print("That user already has access to that role")
-            return False
+            return True
 
         request = self.service.users().patch(userKey=self.userKey, body=patch)
         response = request.execute()
