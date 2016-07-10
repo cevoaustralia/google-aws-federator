@@ -77,7 +77,11 @@ class User(GoogleApi):
         # with the same name in the same account but with different SAML providers, but
         # I think that's OK because I don't think AWS lets you do that anyhow
         current = json.loads(self.get())
-        current = current['customSchemas']['SSO']
+        print("Current is:\n%s" % json.dumps(current))
+        if current.has_key('customSchemas') and current['customSchemas'].has_key('SSO'):
+            current = current['customSchemas']['SSO']
+        else:
+            current = {'role':[]}
 
         typeName = roleMatch.group(1) + '-' + roleMatch.group(2)
         shape = self.patchShape % (roleArn, providerArn, typeName)
@@ -95,8 +99,6 @@ class User(GoogleApi):
 
             patch['customSchemas']['SSO']['role'].append(role)
 
-        patch_str = json.dumps(patch)
-
         if not do_add:
             print("That user already has access to that role")
             return False
@@ -104,6 +106,55 @@ class User(GoogleApi):
         request = self.service.users().patch(userKey=self.userKey, body=patch)
         response = request.execute()
         return roleMatch.group(2)
+
+    def remove_role(self, roleArn=None, providerArn=None, customType=None):
+        if roleArn is None and providerArn is None and customType is None:
+            print("ERROR: You must specify the Role ARN and the Provider ARN, or the Custom Type")
+            return False
+
+        # Removing a role is similar to adding one -- we need to update the current
+        # custom schema set and re-patch the user.
+        current = json.loads(self.get())
+        if current.has_key('customSchemas') and current['customSchemas'].has_key('SSO'):
+            current = current['customSchemas']['SSO']
+        else:
+            # there are no custom roles associated
+            return "user has no roles"
+
+        new_shape = {
+            'customSchemas': {
+                'SSO': {
+                    'role': []
+                }
+            }
+        }
+
+        removed = None
+        for role in current['role']:
+            # copy all the roles across to the new list, unless it matches the one
+            # that we're removing
+            if customType:
+                if role['customType'] == customType:
+                    removed = customType
+                    continue
+            elif roleArn and providerArn:
+                value = roleArn + "," + providerArn
+                if role['value'] == value:
+                    removed = value
+                    continue
+            else:
+                print("I don't know how I got here")
+                sys.exit(1)
+
+            new_shape['customSchemas']['SSO']['role'].append(role)
+
+        if removed:
+            request = self.service.users().patch(userKey=self.userKey, body=new_shape)
+            response = request.execute()
+
+        return removed
+
+
 
 class Schema(GoogleApi):
     rawSchema = """

@@ -62,6 +62,20 @@ def user_add(args):
 def user_remove(args):
     args = vars(args)
     print("removing a role from a user: %s" % args)
+    user = googlefed.User(userKey=args['userkey'])
+    if args.has_key('customtype'):
+        removed = user.remove_role(customType=args['customtype'])
+    elif (args.has_key('rolearn') and args.has_key('providerarn')):
+        removed = user.remove_role(roleArn=args['rolearn'], providerArn=args['providerarn'])
+    else:
+        print("You must specify either the Custom Type, or both Role and Provider ARNs")
+        sys.exit(1)
+
+    if removed:
+        print("Removed role %s from user %s" % (removed, args['userkey']))
+    else:
+        print("Could not remove role from user %s" % args['userkey'])
+        sys.exit(1)
 
 def user_show(args):
     args = vars(args)
@@ -104,7 +118,11 @@ def main():
 
     parser_user_add.set_defaults(func=user_add)
 
-    parser_user_remove = user_subparser.add_parser("remove", help="Remove a role from a user")
+    parser_user_remove = user_subparser.add_parser("remove", help="Remove a role from a user. You must specify either the custom type name, or both the role/provider ARNs")
+    parser_user_remove.add_argument("-R", "--rolearn", help="The ARN of the AWS Role to remove")
+    parser_user_remove.add_argument("-P", "--providerarn", help="The ARN of the AWS Identity Provider associated with the role to remove")
+    parser_user_remove.add_argument("-T", "--customtype", help="The custom Type name of the role to remove")
+
     parser_user_remove.set_defaults(func=user_remove)
 
     parser_user_show = user_subparser.add_parser("show", help="Show the current shape of a user")
