@@ -10,7 +10,7 @@ import json
 from googleapiclient.errors import HttpError
 import re
 
-class GoogleApi(object):
+class Federator(object):
     # we need multiple scopes, because we need to define a custom schema
     # before being able to add roles defined within that schema to a user
     scope = "https://www.googleapis.com/auth/admin.directory.user " + "https://www.googleapis.com/auth/admin.directory.userschema"
@@ -31,7 +31,7 @@ class GoogleApi(object):
         self.http = credentials.authorize(self.http)
         self.service = build('admin', 'directory_v1', http=self.http)
 
-class User(GoogleApi):
+class User(Federator):
     roleArnShape = re.compile('^arn:aws:iam::(\d{12}):role/(\w+)')
     providerArnShape = re.compile('^arn:aws:iam::\d{12}:saml-provider/\w+')
 
@@ -155,7 +155,7 @@ class User(GoogleApi):
 
 
 
-class Schema(GoogleApi):
+class Schema(Federator):
     rawSchema = """
     {
         "fields":
