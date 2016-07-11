@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
-import googlefed
+import federator
 import sys
 import argparse
 
 def init(args):
     args = vars(args)
-    googlefed.GoogleApi(clientId=args['clientid'], clientSecret=args['clientsecret'])
+    federator.GoogleApi(clientId=args['clientid'], clientSecret=args['clientsecret'])
 
 def schema_verify(args):
     args = vars(args)
-    schema = googlefed.Schema(customerId=args['customerid'])
+    schema = federator.Schema(customerId=args['customerid'])
     if schema.exists():
         print("Custom SSO schema exists")
     else:
@@ -19,7 +19,7 @@ def schema_verify(args):
 
 def schema_create(args):
     args = vars(args)
-    schema = googlefed.Schema(customerId=args['customerid'])
+    schema = federator.Schema(customerId=args['customerid'])
     if schema.exists():
         return True
 
@@ -31,7 +31,7 @@ def schema_create(args):
 
 def schema_delete(args):
     args = vars(args)
-    schema = googlefed.Schema(customerId=args['customerid'])
+    schema = federator.Schema(customerId=args['customerid'])
     if not schema.exists():
         return True
 
@@ -43,7 +43,7 @@ def schema_delete(args):
 
 def schema_show(args):
     args = vars(args)
-    schema = googlefed.Schema(customerId=args['customerid'])
+    schema = federator.Schema(customerId=args['customerid'])
     if not schema.exists():
         sys.exit(1)
 
@@ -51,7 +51,7 @@ def schema_show(args):
 
 def user_add(args):
     args = vars(args)
-    user = googlefed.User(userKey=args['userkey'])
+    user = federator.User(userKey=args['userkey'])
     added = user.add_role(roleArn=args['rolearn'], providerArn=args['providerarn'])
     if added:
         print("Updated user %s" % args['userkey'])
@@ -62,7 +62,7 @@ def user_add(args):
 def user_remove(args):
     args = vars(args)
     print("removing a role from a user: %s" % args)
-    user = googlefed.User(userKey=args['userkey'])
+    user = federator.User(userKey=args['userkey'])
     if args.has_key('customtype') and args['customtype'] is not None:
         removed = user.remove_role(customType=args['customtype'])
     elif (args.has_key('rolearn') and args.has_key('providerarn')):
@@ -79,7 +79,7 @@ def user_remove(args):
 
 def user_show(args):
     args = vars(args)
-    user = googlefed.User(userKey=args['userkey'])
+    user = federator.User(userKey=args['userkey'])
     print(user.get())
 
 def main():
