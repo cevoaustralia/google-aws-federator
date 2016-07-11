@@ -49,7 +49,6 @@ class Federator(object):
             print("Federator credentials file %s is not safe; must be mode 0600" % credfile)
             sys.exit(1)
 
-
         storage = Storage(credfile)
         credentials = storage.get()
 
@@ -60,6 +59,12 @@ class Federator(object):
 
             flow = OAuth2WebServerFlow(clientId, clientSecret, self.scope)
             credentials = tools.run_flow(flow, storage, tools.argparser.parse_args())
+
+        try:
+            os.chmod(credfile, 0600)
+        except:
+            print("Cannot set mode of credentials file")
+            raise
 
         self.http = httplib2.Http()
         self.http = credentials.authorize(self.http)
