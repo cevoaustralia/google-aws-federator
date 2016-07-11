@@ -9,6 +9,9 @@ from oauth2client.client import OAuth2WebServerFlow
 import json
 from googleapiclient.errors import HttpError
 import re
+import os
+import stat
+import sys
 
 class Federator(object):
     # we need multiple scopes, because we need to define a custom schema
@@ -16,7 +19,38 @@ class Federator(object):
     scope = "https://www.googleapis.com/auth/admin.directory.user " + "https://www.googleapis.com/auth/admin.directory.userschema"
 
     def __init__(self, clientId=None, clientSecret=None):
-        storage = Storage('credentials.dat')
+        store = os.path.expanduser('~/.federator')
+        try:
+            os.mkdir(store, 0700)
+        except OSError as err:
+            if err.strerror != 'File exists':
+                print("Cannot create credential store")
+                sys.exit(1)
+
+            # Verify the permissions
+            res = os.stat(store)
+            if not stat.S_ISDIR(res.st_mode):
+                print("%s is not a directory" % store)
+                sys.exit(1)
+
+            if (res.st_mode & stat.S_IRWXG) or (res.st_mode & stat.S_IRWXO):
+                print("Federator credentials directory %s is not safe; must be mode 0700" % store)
+                sys.exit(1)
+
+        credfile = os.path.join(store, 'credentials.dat')
+
+        # if the file exists already, make sure its permissions are safe
+        res = os.stat(credfile)
+        if not stat.S_ISREG(res.st_mode):
+            print("Federator credentials file %s is not a regular file" % credfile)
+            sys.exit(1)
+
+        if (res.st_mode & stat.S_IRWXG) or (res.st_mode & stat.S_IRWXO) or (res.st_mode & stat.S_IXUSR):
+            print("Federator credentials file %s is not safe; must be mode 0600" % credfile)
+            sys.exit(1)
+
+
+        storage = Storage(credfile)
         credentials = storage.get()
 
         if credentials is None or credentials.invalid:
