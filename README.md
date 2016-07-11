@@ -3,6 +3,13 @@
 Tools to manage configuration and maintenance of federating identity between Google Apps (as the
 identity provider) and AWS.
 
+## Installation
+
+1. Clone this repo
+1. In the top-level directory, run `pip install --upgrade .` (if you want to install to just a
+   user-specific directory, user `pip install --upgrade --user .`)
+1. That's it!
+
 ## Setup
 
 ### Prerequisites
