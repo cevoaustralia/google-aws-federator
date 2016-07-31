@@ -45,22 +45,27 @@ class Federator(object):
         credfile = os.path.join(store, scope_hash.hexdigest())
 
         # if the file exists already, make sure its permissions are safe
-        res = os.stat(credfile)
-        if not stat.S_ISREG(res.st_mode):
-            print("Federator credentials file %s is not a regular file" % credfile)
-            sys.exit(1)
+        try:
+            res = os.stat(credfile)
 
-        if (res.st_mode & stat.S_IRWXG) or (res.st_mode & stat.S_IRWXO) or (res.st_mode & stat.S_IXUSR):
-            print("Federator credentials file %s is not safe; must be mode 0600" % credfile)
-            sys.exit(1)
+            if not stat.S_ISREG(res.st_mode):
+                print("Federator credentials file %s is not a regular file" % credfile)
+                sys.exit(1)
+
+            if (res.st_mode & stat.S_IRWXG) or (res.st_mode & stat.S_IRWXO) or (res.st_mode & stat.S_IXUSR):
+                print("Federator credentials file %s is not safe; must be mode 0600" % credfile)
+                sys.exit(1)
+
+        except OSError as err:
+            if err.errno != 2:
+                raise
 
         storage = Storage(credfile)
         credentials = storage.get()
 
         if credentials is None or credentials.invalid:
             if clientId is None or clientSecret is None:
-                print("ERROR: No credentials defined. You must run init first")
-                return False
+                raise Exception("ERROR: No credentials defined. You must supply the CLIENTID and CLIENTSECRET arguments")
 
             flow = OAuth2WebServerFlow(clientId, clientSecret, scope)
             credentials = tools.run_flow(flow, storage, tools.argparser.parse_args())
