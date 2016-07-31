@@ -12,13 +12,16 @@ import re
 import os
 import stat
 import sys
+from Crypto.Hash import SHA256
 
 class Federator(object):
     # we need multiple scopes, because we need to define a custom schema
     # before being able to add roles defined within that schema to a user
-    scope = "https://www.googleapis.com/auth/admin.directory.user " + "https://www.googleapis.com/auth/admin.directory.userschema"
 
-    def __init__(self, clientId=None, clientSecret=None):
+    def __init__(self, clientId=None, clientSecret=None, scope=None):
+        if scope is None:
+            raise Exception('No scope provided')
+
         store = os.path.expanduser('~/.federator')
         try:
             os.mkdir(store, 0700)
@@ -37,7 +40,9 @@ class Federator(object):
                 print("Federator credentials directory %s is not safe; must be mode 0700" % store)
                 sys.exit(1)
 
-        credfile = os.path.join(store, 'credentials.dat')
+        scope_hash = SHA256.new()
+        scope_hash.update(scope)
+        credfile = os.path.join(store, scope_hash.hexdigest())
 
         # if the file exists already, make sure its permissions are safe
         res = os.stat(credfile)
@@ -57,7 +62,7 @@ class Federator(object):
                 print("ERROR: No credentials defined. You must run init first")
                 return False
 
-            flow = OAuth2WebServerFlow(clientId, clientSecret, self.scope)
+            flow = OAuth2WebServerFlow(clientId, clientSecret, scope)
             credentials = tools.run_flow(flow, storage, tools.argparser.parse_args())
 
         try:
@@ -89,8 +94,10 @@ class User(Federator):
     }
     """
 
-    def __init__(self, userKey=None):
-        super(User, self).__init__()
+    user_scope = "https://www.googleapis.com/auth/admin.directory.user"
+
+    def __init__(self, userKey=None, clientId=None, clientSecret=None):
+        super(User, self).__init__(scope=self.user_scope, clientId=clientId, clientSecret=clientSecret)
         self.userKey = userKey
 
     def get(self):
@@ -211,8 +218,10 @@ class Schema(Federator):
     """
     customSchema = json.loads(rawSchema)
 
-    def __init__(self, customerId=None):
-        super(Schema, self).__init__()
+    schema_scope = "https://www.googleapis.com/auth/admin.directory.userschema"
+
+    def __init__(self, customerId=None, clientId=None, clientSecret=None):
+        super(Schema, self).__init__(scope=self.schema_scope, clientId=clientId, clientSecret=clientSecret)
         self.customerId = customerId
 
     def list(self):
