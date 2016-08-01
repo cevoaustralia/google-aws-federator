@@ -69,13 +69,15 @@ locahost$ federator init -I <client_id> -C <client_secret>
 
 The script will cause a browser to be opened, where you can sign in as an appropriate user and
 approve the access. Once this has been done once, the credentials will be stored in a file
-`credentials.dat` -- however, these credentials expire after one hour after they become idle,
-so if you're going to be doing this sort of thing a lot you'd probably be better off
-batching things up.
+under `$HOME/.federator` -- these credentials expire after one hour after they become idle,
+but they include a refresh token and will be transparently re-issued on demand, provided your
+Google Apps Domain User is still valid.
+
+Credential files are specific to the scope of access that they need.
 
 ### Subsequent Runs
 
-Once the `credentials.dat` file has been created, you will not have to go through the browser
+Once the persistent credentials file(s) have been created, you will not have to go through the browser
 auth steps again while the credentials are valid.
 
 ## Usage
