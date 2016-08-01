@@ -87,7 +87,7 @@ class User(Federator):
     patchShape = """
     {
         "customSchemas": {
-            "SSO": {
+            "AWS-SSO": {
                 "role": [
                     {
                         "value": "%s,%s",
@@ -111,8 +111,8 @@ class User(Federator):
 
     def get_current(self):
         current = json.loads(self.get())
-        if current.has_key('customSchemas') and current['customSchemas'].has_key('SSO'):
-            current = current['customSchemas']['SSO']
+        if current.has_key('customSchemas') and current['customSchemas'].has_key('AWS-SSO'):
+            current = current['customSchemas']['AWS-SSO']
         else:
             current = {'role':[], 'duration':3600}
 
@@ -124,7 +124,7 @@ class User(Federator):
             return
 
         current['duration'] = duration
-        patch = {'customSchemas':{'SSO':current}}
+        patch = {'customSchemas':{'AWS-SSO':current}}
         request = self.service.users().patch(userKey=self.userKey, body=patch)
         response = request.execute()
 
@@ -161,14 +161,14 @@ class User(Federator):
                 do_add = False
                 continue
 
-            patch['customSchemas']['SSO']['role'].append(role)
+            patch['customSchemas']['AWS-SSO']['role'].append(role)
 
         if not do_add:
             print("That user already has access to that role")
             return True
 
         if current.has_key('duration'):
-            patch['customSchemas']['SSO']['duration'] = current['duration']
+            patch['customSchemas']['AWS-SSO']['duration'] = current['duration']
 
         request = self.service.users().patch(userKey=self.userKey, body=patch)
         response = request.execute()
@@ -182,15 +182,15 @@ class User(Federator):
         # Removing a role is similar to adding one -- we need to update the current
         # custom schema set and re-patch the user.
         current = json.loads(self.get())
-        if current.has_key('customSchemas') and current['customSchemas'].has_key('SSO'):
-            current = current['customSchemas']['SSO']
+        if current.has_key('customSchemas') and current['customSchemas'].has_key('AWS-SSO'):
+            current = current['customSchemas']['AWS-SSO']
         else:
             # there are no custom roles associated
             return "user has no roles"
 
         new_shape = {
             'customSchemas': {
-                'SSO': {
+                'AWS-SSO': {
                     'role': []
                 }
             }
@@ -213,7 +213,7 @@ class User(Federator):
                 print("I don't know how I got here")
                 sys.exit(1)
 
-            new_shape['customSchemas']['SSO']['role'].append(role)
+            new_shape['customSchemas']['AWS-SSO']['role'].append(role)
 
         if removed:
             request = self.service.users().patch(userKey=self.userKey, body=new_shape)
@@ -240,7 +240,7 @@ class Schema(Federator):
                 "readAccessType": "ADMINS_AND_SELF"
             }
         ],
-        "schemaName": "SSO"
+        "schemaName": "AWS-SSO"
     }
     """
     customSchema = json.loads(rawSchema)
@@ -266,7 +266,7 @@ class Schema(Federator):
         request = self.service.schemas().list(customerId=self.customerId)
         response = request.execute()
         for schema in response['schemas']:
-            if schema['schemaName'] == "SSO":
+            if schema['schemaName'] == "AWS-SSO":
                 return True
 
         return False
