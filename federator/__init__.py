@@ -103,7 +103,7 @@ def main():
     parser_schema_delete = schema_subparser.add_parser("delete", help="Delete the custom schema")
     parser_schema_delete.set_defaults(func=schema_delete)
 
-    parser_schema_verify = schema_subparser.add_parser("verify", help="Delete the custom schema")
+    parser_schema_verify = schema_subparser.add_parser("verify", help="Check the custom schema")
     parser_schema_verify.set_defaults(func=schema_verify)
 
     parser_schema_show = schema_subparser.add_parser("show", help="Print the custom schema")
