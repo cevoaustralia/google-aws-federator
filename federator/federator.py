@@ -109,6 +109,26 @@ class User(Federator):
         request = self.service.users().get(userKey=self.userKey, projection='full')
         return json.dumps(request.execute(), sort_keys=True, indent=4, separators=(',', ': '))
 
+    def get_current(self):
+        current = json.loads(self.get())
+        if current.has_key('customSchemas') and current['customSchemas'].has_key('SSO'):
+            current = current['customSchemas']['SSO']
+        else:
+            current = {'role':[], 'duration':3600}
+
+        return current
+
+    def set_duration(self, duration=3600):
+        current = self.get_current()
+        if current.has_key('duration') and current['duration'] == duration:
+            return
+
+        current['duration'] = duration
+        patch = {'customSchemas':{'SSO':current}}
+        request = self.service.users().patch(userKey=self.userKey, body=patch)
+        response = request.execute()
+
+
     def add_role(self, roleArn=None, providerArn=None):
         # Make sure the ARNs are the right kind of shape
         roleMatch = self.roleArnShape.match(roleArn)
@@ -124,15 +144,9 @@ class User(Federator):
         # We have to _add_ the patch to the existing set,
         # because the whole custom schema is replaced. We will only add it if the 
         # <rolearn>,<providerarn> tuple is different and if the customType name
-        # is different. This means that we can't, for example, have two roles
-        # with the same name in the same account but with different SAML providers, but
-        # I think that's OK because I don't think AWS lets you do that anyhow
-        current = json.loads(self.get())
-        if current.has_key('customSchemas') and current['customSchemas'].has_key('SSO'):
-            current = current['customSchemas']['SSO']
-        else:
-            current = {'role':[]}
-
+        # is different. This means that we can't have two roles
+        # with the same name in the same account but with different SAML providers
+        current = self.get_current()
         typeName = roleMatch.group(1) + '-' + roleMatch.group(2)
         shape = self.patchShape % (roleArn, providerArn, typeName)
         patch = json.loads(shape)
@@ -152,6 +166,9 @@ class User(Federator):
         if not do_add:
             print("That user already has access to that role")
             return True
+
+        if current.has_key('duration'):
+            patch['customSchemas']['SSO']['duration'] = current['duration']
 
         request = self.service.users().patch(userKey=self.userKey, body=patch)
         response = request.execute()
@@ -216,6 +233,11 @@ class Schema(Federator):
                 "fieldType": "STRING",
                 "readAccessType": "ADMINS_AND_SELF",    
                 "multiValued": true
+            },
+            {
+                "fieldName": "duration",
+                "fieldType": "INT64",
+                "readAccessType": "ADMINS_AND_SELF"
             }
         ],
         "schemaName": "SSO"
