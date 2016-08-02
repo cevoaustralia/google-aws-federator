@@ -82,6 +82,11 @@ def user_show(args):
     user = federator.User(userKey=args['userkey'])
     print(user.get())
 
+def user_duration(args):
+    args = vars(args)
+    user = federator.User(userKey=args['userkey'])
+    user.set_duration(duration=args['duration'])
+
 def main():
     parser = argparse.ArgumentParser(prog="federator", description="Manage Google Apps configurations for AWS Single Sign On")
     main_subparsers = parser.add_subparsers(help="subcommand help")
@@ -127,6 +132,10 @@ def main():
 
     parser_user_show = user_subparser.add_parser("show", help="Show the current shape of a user")
     parser_user_show.set_defaults(func=user_show)
+
+    parser_user_duration = user_subparser.add_parser("duration", help="Set the duration of sessions for this user")
+    parser_user_duration.add_argument("-D", "--duration", help="The duration of a user session in seconds")
+    parser_user_duration.set_defaults(func=user_duration)
 
     args = parser.parse_args()
     # have to clean out our command-line args or they get swallowed twice during init
